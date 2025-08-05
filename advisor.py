@@ -96,7 +96,7 @@ class ShoppingAdvisor:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4.1-nano",
+                model="gpt-4.1-mini",
                 messages=messages,
                 tools=[{"type": "function", "function": self.preference_extractor_schema}],
                 tool_choice={"type": "function", "function": {"name": "PreferenceExtractor"}},
@@ -122,7 +122,7 @@ class ShoppingAdvisor:
         for i in range(5):
             try:
                 response = self.client.chat.completions.create(
-                    model="gpt-4.1-nano",
+                    model="gpt-4.1-mini",
                     messages=messages,
                     tools=[{"type": "function", "function": self.router_schema}],
                     tool_choice={"type": "function", "function": {"name": "IntentRouter"}},
@@ -147,7 +147,7 @@ class ShoppingAdvisor:
 
         try:
             first_response = self.client.chat.completions.create(
-                model="gpt-4.1-nano",
+                model="gpt-4.1-mini",
                 messages=messages,
                 tools=[{"type": "function", "function": self.search_tool_schema}],
                 tool_choice="auto",
@@ -181,7 +181,7 @@ class ShoppingAdvisor:
                 
                 logger.info("Messages to LLM (2nd RAG call):\n%s", json.dumps(messages, indent=2))
 
-                final_response = self.client.chat.completions.create(model="gpt-4.1-nano", messages=messages)
+                final_response = self.client.chat.completions.create(model="gpt-4.1-mini", messages=messages)
                 final_content = (final_response.choices[0].message.content or "").strip()
                 logger.info("Final LLM response: %s", final_content)
                 return final_content
