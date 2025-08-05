@@ -40,17 +40,26 @@ class IntentRouter(BaseModel):
         description="The user's primary intent.",
     )
 
+# --- Preference Extraction ---
+class UserPreference(BaseModel):
+    """Model for user preferences."""
+    brand: Optional[str] = Field(None, description="The user's preferred brand (e.g., 'Dell', 'HP', 'AMD').")
+
+class PreferenceExtractor(BaseModel):
+    """Extracts user preferences from a conversation."""
+    preference: UserPreference = Field(
+        ...,
+        description="The user's preferences.",
+    )
+
 # --- Logging ---
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-# Prevent logs from propagating to the root logger, which Streamlit might configure for console output
 logger.propagate = False
 
-# Remove any existing handlers
 if logger.hasHandlers():
     logger.handlers.clear()
 
-# Create a file handler to write logs to a file
 file_handler = logging.FileHandler("chatbot.log", mode="w")
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
@@ -76,6 +85,32 @@ class ShoppingAdvisor:
         self.retriever = ProductRetriever()
         self.router_schema = convert_to_openai_function(IntentRouter)
         self.search_tool_schema = convert_to_openai_function(ProductSearchTool)
+        self.preference_extractor_schema = convert_to_openai_function(PreferenceExtractor)
+
+    def _extract_preferences(self, user_input: str) -> Optional[Dict[str, Any]]:
+        """Extracts brand preference from user input."""
+        messages = [
+            {"role": "system", "content": "You are a preference spotter. Your task is to identify if the user expresses a preference for a specific brand (like Dell, HP, Apple, AMD, Intel). Only extract the preference if it's explicitly stated."},
+            {"role": "user", "content": user_input},
+        ]
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4.1-nano",
+                messages=messages,
+                tools=[{"type": "function", "function": self.preference_extractor_schema}],
+                tool_choice={"type": "function", "function": {"name": "PreferenceExtractor"}},
+            )
+            tool_call = response.choices[0].message.tool_calls[0]
+            args = json.loads(tool_call.function.arguments)
+            preference = args.get("preference", {})
+            if preference.get('brand'):
+                logger.info(f"Extracted brand preference: {preference['brand']}")
+                return preference
+        except (json.JSONDecodeError, KeyError, ValueError, IndexError, AttributeError) as e:
+            logger.warning(f"Preference extraction failed: {e}")
+            return None
+        return None
 
     def _get_intent(self, user_input: str) -> Intent:
         """Determines the user's intent with up to 5 retries."""
@@ -111,7 +146,6 @@ class ShoppingAdvisor:
         logger.info("Messages to LLM (RAG flow):\n%s", json.dumps(messages, indent=2))
 
         try:
-            # 1) Ask the model to call the product search tool
             first_response = self.client.chat.completions.create(
                 model="gpt-4.1-nano",
                 messages=messages,
@@ -121,13 +155,11 @@ class ShoppingAdvisor:
             resp_msg = first_response.choices[0].message
             logger.info("LLM response (1st RAG call):\n%s", resp_msg.model_dump_json(indent=2))
 
-            # 2) If tool is called, execute it and get a final summary
             if getattr(resp_msg, "tool_calls", None):
-                messages.append(resp_msg.model_dump())  # Append assistant's reply with tool call
+                messages.append(resp_msg.model_dump())
 
                 for tool_call in resp_msg.tool_calls:
                     args = json.loads(tool_call.function.arguments or "{}")
-                    # Apply sticky preferences
                     if preferences.get('brand'):
                         args['brand'] = preferences['brand']
 
@@ -144,7 +176,6 @@ class ShoppingAdvisor:
                         "content": products_json,
                     })
                 
-                # Use a generic follow-up prompt
                 follow_up = "Based on the tool results (JSON above), write a concise, helpful summary. Respond in the user's language."
                 messages.append({"role": "user", "content": follow_up})
                 
@@ -155,7 +186,6 @@ class ShoppingAdvisor:
                 logger.info("Final LLM response: %s", final_content)
                 return final_content
 
-            # 3) If no tool is called, return the model's direct response
             return (resp_msg.content or "").strip()
 
         except Exception as e:
@@ -170,8 +200,6 @@ class ShoppingAdvisor:
         """Routes the user to a specific handler based on the classified intent."""
         logger.info("User input: %s", user_input)
         intent = self._get_intent(user_input)
-
-        # Limit history to the last 5 pairs (10 messages)
         truncated_history = history[-10:]
 
         if intent == Intent.SEARCH_SELECTION:
@@ -180,45 +208,31 @@ class ShoppingAdvisor:
             return self._execute_rag_flow(truncated_history, PRODUCT_INFORMATION_DETAILS["system_prompt"], preferences)
         elif intent == Intent.COMPARISON:
             return self._handle_comparison(truncated_history, preferences)
-        else:  # GENERAL_INQUIRY is the fallback
+        else:
             return self._execute_rag_flow(truncated_history, GENERAL_ASSORTMENT_INQUIRY["system_prompt"], preferences)
 
-
-# --- Streamlit App ---
 def main():
     st.set_page_config(page_title="Future Tech - Shopping Assistant", page_icon="🛍️")
     st.title("🛍️ Future Tech — Shopping Assistant")
 
-    # --- API Key Handling ---
-    api_key = st.session_state.get("openai_api_key", None)
-
+    api_key = st.session_state.get("openai_api_key")
     if not api_key:
         try:
             api_key = st.secrets["OPENAI_API_KEY"]
             st.session_state["openai_api_key"] = api_key
         except (KeyError, FileNotFoundError):
             st.warning("OpenAI API key not found in Streamlit secrets.")
-            api_key_input = st.text_input("Please enter your OpenAI API Key:", type="password")
+            api_key_input = st.text_input("Please enter your OpenAI API Key:", type="password", key="api_key_input")
             if api_key_input:
                 st.session_state["openai_api_key"] = api_key_input
                 st.rerun()
             st.stop()
     
-    # --- Session State Management ---
     if "messages" not in st.session_state:
-        st.session_state.messages: List[Dict[str, str]] = []
+        st.session_state.messages = []
     if "preferences" not in st.session_state:
-        st.session_state.preferences: Dict[str, Any] = {}
+        st.session_state.preferences = {}
 
-    # --- UI Components ---
-    st.sidebar.title("Preferences")
-    st.session_state.preferences['brand'] = st.sidebar.selectbox(
-        "Preferred Brand",
-        ["Any", "Lenovo", "ASUS", "Dell", "HP", "Acer", "MSI", "Apple"],
-        index=0
-    )
-
-    # --- Main App ---
     st.markdown("Welcome! How can I help you choose a laptop today? / Добро пожаловать! Чем я могу помочь вам в выборе ноутбука сегодня?")
 
     for m in st.session_state.messages:
@@ -233,6 +247,11 @@ def main():
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        new_preferences = advisor._extract_preferences(prompt)
+        if new_preferences and new_preferences.get('brand'):
+            st.session_state.preferences['brand'] = new_preferences['brand']
+            st.info(f"Preference updated: We will now look for **{new_preferences['brand']}** products.")
+
         history = st.session_state.get("messages", [])
         preferences = st.session_state.get("preferences", {})
         reply = advisor.get_response(prompt, history, preferences)
@@ -242,6 +261,7 @@ def main():
 
     if st.button("Clear chat / Очистить чат", type="secondary"):
         st.session_state.messages = []
+        st.session_state.preferences = {}
         st.rerun()
 
 if __name__ == "__main__":
