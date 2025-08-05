@@ -104,7 +104,7 @@ class ShoppingAdvisor:
         logger.warning("Intent classification failed after 5 attempts. Defaulting to GENERAL_INQUIRY.")
         return Intent.GENERAL_INQUIRY
 
-    def _execute_rag_flow(self, history: List[Dict[str, str]], system_prompt_content: str) -> str:
+    def _execute_rag_flow(self, history: List[Dict[str, str]], system_prompt_content: str, preferences: Dict[str, Any]) -> str:
         """Executes the full retrieval-augmented generation flow."""
         system_prompt = {"role": "system", "content": system_prompt_content}
         messages: List[Dict[str, Any]] = [system_prompt] + history
@@ -127,6 +127,10 @@ class ShoppingAdvisor:
 
                 for tool_call in resp_msg.tool_calls:
                     args = json.loads(tool_call.function.arguments or "{}")
+                    # Apply sticky preferences
+                    if preferences.get('brand'):
+                        args['brand'] = preferences['brand']
+
                     logger.info("Tool call requested: %s with args:\n%s", tool_call.function.name, json.dumps(args, indent=2))
                     
                     results = self.retriever.search_products(**args)
@@ -158,34 +162,26 @@ class ShoppingAdvisor:
             logger.exception("Error in RAG flow: %s", e)
             return "Sorry, I encountered an error while processing your request."
 
-    def _handle_comparison(self, history: List[Dict[str, str]]) -> str:
-        """Handles a product comparison request."""
-        system_prompt = {"role": "system", "content": PRODUCT_COMPARISON["system_prompt"]}
-        messages: List[Dict[str, Any]] = [system_prompt] + history
-        logger.info("Messages to LLM (Comparison flow):\n%s", json.dumps(messages, indent=2))
-        
-        try:
-            response = self.client.chat.completions.create(model="gpt-4.1-nano", messages=messages)
-            content = (response.choices[0].message.content or "").strip()
-            logger.info("LLM response (Comparison): %s", content)
-            return content
-        except Exception as e:
-            logger.exception("Error in comparison flow: %s", e)
-            return "Sorry, I couldn't process the comparison request."
+    def _handle_comparison(self, history: List[Dict[str, str]], preferences: Dict[str, Any]) -> str:
+        """Handles a product comparison request using the RAG flow."""
+        return self._execute_rag_flow(history, PRODUCT_COMPARISON["system_prompt"], preferences)
 
-    def get_response(self, user_input: str, history: List[Dict[str, str]]) -> str:
+    def get_response(self, user_input: str, history: List[Dict[str, str]], preferences: Dict[str, Any]) -> str:
         """Routes the user to a specific handler based on the classified intent."""
         logger.info("User input: %s", user_input)
         intent = self._get_intent(user_input)
 
+        # Limit history to the last 5 pairs (10 messages)
+        truncated_history = history[-10:]
+
         if intent == Intent.SEARCH_SELECTION:
-            return self._execute_rag_flow(history, PRODUCT_SEARCH_SELECTION["system_prompt"])
+            return self._execute_rag_flow(truncated_history, PRODUCT_SEARCH_SELECTION["system_prompt"], preferences)
         elif intent == Intent.INFORMATION_DETAILS:
-            return self._execute_rag_flow(history, PRODUCT_INFORMATION_DETAILS["system_prompt"])
+            return self._execute_rag_flow(truncated_history, PRODUCT_INFORMATION_DETAILS["system_prompt"], preferences)
         elif intent == Intent.COMPARISON:
-            return self._handle_comparison(history)
+            return self._handle_comparison(truncated_history, preferences)
         else:  # GENERAL_INQUIRY is the fallback
-            return self._execute_rag_flow(history, GENERAL_ASSORTMENT_INQUIRY["system_prompt"])
+            return self._execute_rag_flow(truncated_history, GENERAL_ASSORTMENT_INQUIRY["system_prompt"], preferences)
 
 
 # --- Streamlit App ---
@@ -207,38 +203,43 @@ def main():
                 st.session_state["openai_api_key"] = api_key_input
                 st.rerun()
             st.stop()
-
-    # --- Main App ---
-    # Intro
-    st.markdown("Welcome! How can I help you choose a laptop today? / Добро пожаловать! Чем я могу помочь вам в выборе ноутбука сегодня?")
-
-    # Session state for chat history
+    
+    # --- Session State Management ---
     if "messages" not in st.session_state:
         st.session_state.messages: List[Dict[str, str]] = []
+    if "preferences" not in st.session_state:
+        st.session_state.preferences: Dict[str, Any] = {}
 
-    # Show history
+    # --- UI Components ---
+    st.sidebar.title("Preferences")
+    st.session_state.preferences['brand'] = st.sidebar.selectbox(
+        "Preferred Brand",
+        ["Any", "Lenovo", "ASUS", "Dell", "HP", "Acer", "MSI", "Apple"],
+        index=0
+    )
+
+    # --- Main App ---
+    st.markdown("Welcome! How can I help you choose a laptop today? / Добро пожаловать! Чем я могу помочь вам в выборе ноутбука сегодня?")
+
     for m in st.session_state.messages:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
     advisor = ShoppingAdvisor(api_key=api_key)
 
-    # Chat input
     prompt = st.chat_input("Type your message... / Введите ваше сообщение...")
     if prompt:
-        # Echo user
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Get assistant response
         history = st.session_state.get("messages", [])
-        reply = advisor.get_response(prompt, history)
+        preferences = st.session_state.get("preferences", {})
+        reply = advisor.get_response(prompt, history, preferences)
         st.session_state.messages.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):
             st.markdown(reply)
 
-    # Clear button
     if st.button("Clear chat / Очистить чат", type="secondary"):
         st.session_state.messages = []
         st.rerun()

@@ -88,17 +88,24 @@ class ProductRetriever:
         Returns:
             True if the query is a match, False otherwise.
         """
+        query_lower = query.lower()
+        
         # Check against the full model name
-        if distance.Levenshtein.distance(query.lower(), f"{product.brand.lower()} {product.model.lower()}") <= threshold:
+        if distance.Levenshtein.distance(query_lower, f"{product.brand.lower()} {product.model.lower()}") <= threshold:
             return True
         
         # Check against the model name
-        if distance.Levenshtein.distance(query.lower(), product.model.lower()) <= threshold:
+        if distance.Levenshtein.distance(query_lower, product.model.lower()) <= threshold:
             return True
 
         # Check against all aliases
         for alias in product.aliases:
-            if distance.Levenshtein.distance(query.lower(), alias.lower()) <= threshold:
+            if distance.Levenshtein.distance(query_lower, alias.lower()) <= threshold:
+                return True
+
+        # Check against all keywords
+        for keyword in product.keywords:
+            if distance.Levenshtein.distance(query_lower, keyword.lower()) <= threshold:
                 return True
 
         return False
