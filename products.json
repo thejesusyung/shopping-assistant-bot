@@ -1,0 +1,428 @@
+[
+  {
+    "id": "LEN-THINKBOOK-14-G3",
+    "brand": "Lenovo",
+    "model": "ThinkBook 14 G3",
+    "category": "laptop",
+    "keywords": [
+      "thinkbook",
+      "lenovo",
+      "business",
+      "14"
+    ],
+    "aliases": [
+      "ThinkBok 14 G3",
+      "ThinkBook14G3",
+      "ThinkBok Pro",
+      "Леново Тинкбук 14 G3",
+      "Тинкбук 14 G3",
+      "Тинкбук 14",
+      "Тинкбук Про"
+    ],
+    "variants": [
+      {
+        "sku": "LEN-THINKBOOK-14-G3-32-1TB-R7",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "AMD Ryzen 7 7840U",
+        "gpu": "integrated",
+        "screen_inch": 14.0,
+        "price_usd": 1799,
+        "availability": "in_stock",
+        "color": "gray"
+      },
+      {
+        "sku": "LEN-THINKBOOK-14-G3-16-512-I7",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "Intel Core i7-1360P",
+        "gpu": "integrated",
+        "screen_inch": 14.0,
+        "price_usd": 1299,
+        "availability": "in_stock",
+        "color": "gray"
+      }
+    ]
+  },
+  {
+    "id": "ASU-ZENBOOK-15",
+    "brand": "ASUS",
+    "model": "Zenbook 15",
+    "category": "laptop",
+    "keywords": [
+      "zenbook",
+      "asus",
+      "ultrabook",
+      "15.6"
+    ],
+    "aliases": [
+      "Zenbok 15",
+      "Zenbook15",
+      "Zenbok Pro",
+      "Асус Зенбук 15",
+      "Зенбук 15",
+      "Зенбук Про 15"
+    ],
+    "variants": [
+      {
+        "sku": "ASU-ZENBOOK-15-32-1TB-R7-RTX3050",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "AMD Ryzen 7 7840HS",
+        "gpu": "RTX 3050",
+        "screen_inch": 15.6,
+        "price_usd": 1899,
+        "availability": "limited",
+        "color": "blue"
+      },
+      {
+        "sku": "ASU-ZENBOOK-15-16-512-I7",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "Intel Core i7-13700H",
+        "gpu": "integrated",
+        "screen_inch": 15.6,
+        "price_usd": 1399,
+        "availability": "in_stock",
+        "color": "blue"
+      }
+    ]
+  },
+  {
+    "id": "DEL-XPS-13-9315",
+    "brand": "Dell",
+    "model": "XPS 13 (9315)",
+    "category": "laptop",
+    "keywords": [
+      "dell",
+      "xps",
+      "13",
+      "ultrabook"
+    ],
+    "aliases": [
+      "XPS13",
+      "Dell XPS13",
+      "XPS 13 9315",
+      "Делл XPS 13",
+      "Делл ИксПиЭс 13",
+      "Икс Пи Эс 13"
+    ],
+    "variants": [
+      {
+        "sku": "DEL-XPS-13-9315-32-1TB-I7",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "Intel Core i7-1250U",
+        "gpu": "integrated",
+        "screen_inch": 13.4,
+        "price_usd": 1799,
+        "availability": "in_stock",
+        "color": "silver"
+      },
+      {
+        "sku": "DEL-XPS-13-9315-16-512-I5",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "Intel Core i5-1230U",
+        "gpu": "integrated",
+        "screen_inch": 13.4,
+        "price_usd": 1199,
+        "availability": "in_stock",
+        "color": "silver"
+      }
+    ]
+  },
+  {
+    "id": "HP-ENVY-15",
+    "brand": "HP",
+    "model": "Envy 15",
+    "category": "laptop",
+    "keywords": [
+      "hp",
+      "envy",
+      "15"
+    ],
+    "aliases": [
+      "Envi 15",
+      "HP Envy15",
+      "ЭйчПи Энви 15",
+      "Энви 15"
+    ],
+    "variants": [
+      {
+        "sku": "HP-ENVY-15-32-1TB-R7",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "AMD Ryzen 7 7840U",
+        "gpu": "integrated",
+        "screen_inch": 15.6,
+        "price_usd": 1699,
+        "availability": "in_stock",
+        "color": "silver"
+      },
+      {
+        "sku": "HP-ENVY-15-16-512-I7",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "Intel Core i7-1355U",
+        "gpu": "integrated",
+        "screen_inch": 15.6,
+        "price_usd": 1299,
+        "availability": "preorder",
+        "color": "silver"
+      }
+    ]
+  },
+  {
+    "id": "ACR-SWIFT-3-14",
+    "brand": "Acer",
+    "model": "Swift 3 14",
+    "category": "laptop",
+    "keywords": [
+      "acer",
+      "swift",
+      "14"
+    ],
+    "aliases": [
+      "Swft 3 14",
+      "Swift3 14",
+      "Эйсер Свифт 3 14",
+      "Свифт 3 14"
+    ],
+    "variants": [
+      {
+        "sku": "ACR-SWIFT-3-14-32-1TB-I7",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "Intel Core i7-1360P",
+        "gpu": "integrated",
+        "screen_inch": 14.0,
+        "price_usd": 1499,
+        "availability": "in_stock",
+        "color": "green"
+      },
+      {
+        "sku": "ACR-SWIFT-3-14-16-512-R5",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "AMD Ryzen 5 7640U",
+        "gpu": "integrated",
+        "screen_inch": 14.0,
+        "price_usd": 999,
+        "availability": "in_stock",
+        "color": "green"
+      }
+    ]
+  },
+  {
+    "id": "MSI-MODERN-15",
+    "brand": "MSI",
+    "model": "Modern 15",
+    "category": "laptop",
+    "keywords": [
+      "msi",
+      "modern",
+      "15"
+    ],
+    "aliases": [
+      "Modren 15",
+      "MSI Modern15",
+      "МСИ Модерн 15",
+      "Модерн 15"
+    ],
+    "variants": [
+      {
+        "sku": "MSI-MODERN-15-32-1TB-I7",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "Intel Core i7-1260P",
+        "gpu": "integrated",
+        "screen_inch": 15.6,
+        "price_usd": 1399,
+        "availability": "in_stock",
+        "color": "black"
+      },
+      {
+        "sku": "MSI-MODERN-15-16-512-R7",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "AMD Ryzen 7 7730U",
+        "gpu": "integrated",
+        "screen_inch": 15.6,
+        "price_usd": 1099,
+        "availability": "in_stock",
+        "color": "black"
+      }
+    ]
+  },
+  {
+    "id": "LEN-IDEAPAD-5-PRO-16",
+    "brand": "Lenovo",
+    "model": "IdeaPad 5 Pro 16",
+    "category": "laptop",
+    "keywords": [
+      "ideapad",
+      "lenovo",
+      "16"
+    ],
+    "aliases": [
+      "Idea Pad 5 Pro 16",
+      "Ideapd 5 Pro",
+      "Леново Идеапад 5 Про 16",
+      "Идеапад 5 Про 16",
+      "Идеапад 5 Про"
+    ],
+    "variants": [
+      {
+        "sku": "LEN-IDEAPAD-5-PRO-16-32-1TB-R7",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "AMD Ryzen 7 7840HS",
+        "gpu": "integrated",
+        "screen_inch": 16.0,
+        "price_usd": 1599,
+        "availability": "limited",
+        "color": "gray"
+      },
+      {
+        "sku": "LEN-IDEAPAD-5-PRO-16-16-512-I7",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "Intel Core i7-13700H",
+        "gpu": "RTX 3050",
+        "screen_inch": 16.0,
+        "price_usd": 1699,
+        "availability": "in_stock",
+        "color": "gray"
+      }
+    ]
+  },
+  {
+    "id": "ASU-TUF-A15-2024",
+    "brand": "ASUS",
+    "model": "TUF Gaming A15 (2024)",
+    "category": "laptop",
+    "keywords": [
+      "asus",
+      "tuf",
+      "gaming",
+      "a15"
+    ],
+    "aliases": [
+      "TUF A15",
+      "ASUS TUF A-15",
+      "Асус ТУФ A15",
+      "АСУС ТАФ A15",
+      "Туф A15"
+    ],
+    "variants": [
+      {
+        "sku": "ASU-TUF-A15-32-1TB-R7-RTX4050",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "AMD Ryzen 7 7840HS",
+        "gpu": "RTX 4050",
+        "screen_inch": 15.6,
+        "price_usd": 1999,
+        "availability": "in_stock",
+        "color": "black"
+      },
+      {
+        "sku": "ASU-TUF-A15-16-512-R5-RTX3050",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "AMD Ryzen 5 7640HS",
+        "gpu": "RTX 3050",
+        "screen_inch": 15.6,
+        "price_usd": 1299,
+        "availability": "in_stock",
+        "color": "black"
+      }
+    ]
+  },
+  {
+    "id": "DEL-INSPIRON-16-5635",
+    "brand": "Dell",
+    "model": "Inspiron 16 (5635)",
+    "category": "laptop",
+    "keywords": [
+      "dell",
+      "inspiron",
+      "16"
+    ],
+    "aliases": [
+      "Inspirion 16",
+      "Dell Inspiron16",
+      "Делл Инспирон 16",
+      "Инспирон 16"
+    ],
+    "variants": [
+      {
+        "sku": "DEL-INSPIRON-16-5635-32-1TB-R7",
+        "ram_gb": 32,
+        "storage_gb": 1024,
+        "cpu": "AMD Ryzen 7 7840U",
+        "gpu": "integrated",
+        "screen_inch": 16.0,
+        "price_usd": 1499,
+        "availability": "in_stock",
+        "color": "silver"
+      },
+      {
+        "sku": "DEL-INSPIRON-16-5635-16-512-I7",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "Intel Core i7-1360P",
+        "gpu": "integrated",
+        "screen_inch": 16.0,
+        "price_usd": 1199,
+        "availability": "preorder",
+        "color": "silver"
+      }
+    ]
+  },
+  {
+    "id": "APL-MACBOOK-AIR-13-M2",
+    "brand": "Apple",
+    "model": "MacBook Air 13 (M2)",
+    "category": "laptop",
+    "keywords": [
+      "apple",
+      "macbook",
+      "air",
+      "13"
+    ],
+    "aliases": [
+      "MacBook Airr 13",
+      "MBA 13 M2",
+      "Эппл Макбук Эйр 13",
+      "Макбук Эйр 13",
+      "Макбук Эйр M2",
+      "Эйр 13"
+    ],
+    "variants": [
+      {
+        "sku": "APL-MBA-13-M2-16-512",
+        "ram_gb": 16,
+        "storage_gb": 512,
+        "cpu": "Apple M2",
+        "gpu": "integrated",
+        "screen_inch": 13.6,
+        "price_usd": 1499,
+        "availability": "in_stock",
+        "color": "silver"
+      },
+      {
+        "sku": "APL-MBA-13-M2-8-256",
+        "ram_gb": 8,
+        "storage_gb": 256,
+        "cpu": "Apple M2",
+        "gpu": "integrated",
+        "screen_inch": 13.6,
+        "price_usd": 1099,
+        "availability": "out_of_stock",
+        "color": "silver"
+      }
+    ]
+  }
+]
