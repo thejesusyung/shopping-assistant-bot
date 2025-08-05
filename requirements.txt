@@ -1,0 +1,18 @@
+# Streamlit UI (works with Python 3.9+)
+streamlit==1.39.0
+
+# OpenAI Chat Completions client
+openai==1.99.0
+
+# Data validation / tool schema
+pydantic==2.11.7
+langchain-core==0.3.72
+
+# If your retrieval layer uses fuzzy matching (as in your original setup)
+rapidfuzz==3.13.0
+
+# Optional: load env vars from a .env file if you prefer (not required)
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.4.1

@@ -48,7 +48,9 @@ Desktop.ini
 
 # Logs
 *.log
-
+chatbot.log
+.cursor/
+..pytest_cache/
 # Environment variables
 .env
 .env.local
