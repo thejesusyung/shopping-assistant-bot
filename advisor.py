@@ -56,11 +56,6 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-# --- Config ---
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable not set.")
-
 # --- Pydantic schema for tool calling ---
 class ProductSearchTool(BaseModel):
     """Tool for searching products based on various filters."""
@@ -76,8 +71,8 @@ class ProductSearchTool(BaseModel):
 
 # --- Core Advisor ---
 class ShoppingAdvisor:
-    def __init__(self):
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
+    def __init__(self, api_key: str):
+        self.client = OpenAI(api_key=api_key)
         self.retriever = ProductRetriever()
         self.router_schema = convert_to_openai_function(IntentRouter)
         self.search_tool_schema = convert_to_openai_function(ProductSearchTool)
@@ -198,6 +193,22 @@ def main():
     st.set_page_config(page_title="Future Tech - Shopping Assistant", page_icon="🛍️")
     st.title("🛍️ Future Tech — Shopping Assistant")
 
+    # --- API Key Handling ---
+    api_key = st.session_state.get("openai_api_key", None)
+
+    if not api_key:
+        try:
+            api_key = st.secrets["OPENAI_API_KEY"]
+            st.session_state["openai_api_key"] = api_key
+        except (KeyError, FileNotFoundError):
+            st.warning("OpenAI API key not found in Streamlit secrets.")
+            api_key_input = st.text_input("Please enter your OpenAI API Key:", type="password")
+            if api_key_input:
+                st.session_state["openai_api_key"] = api_key_input
+                st.rerun()
+            st.stop()
+
+    # --- Main App ---
     # Intro
     st.markdown("Welcome! How can I help you choose a laptop today? / Добро пожаловать! Чем я могу помочь вам в выборе ноутбука сегодня?")
 
@@ -210,7 +221,7 @@ def main():
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
-    advisor = ShoppingAdvisor()
+    advisor = ShoppingAdvisor(api_key=api_key)
 
     # Chat input
     prompt = st.chat_input("Type your message... / Введите ваше сообщение...")

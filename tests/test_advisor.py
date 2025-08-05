@@ -12,8 +12,8 @@ def advisor():
     with patch("advisor.OpenAI") as MockOpenAI:
         mock_client = MagicMock()
         MockOpenAI.return_value = mock_client
-        advisor_instance = ShoppingAdvisor()
-        # We can mock the retriever as well if needed, but for now, it's not the focus
+        # Pass a dummy API key, as it's now required by the constructor
+        advisor_instance = ShoppingAdvisor(api_key="test_key")
         advisor_instance.retriever = MagicMock()
         return advisor_instance
 
