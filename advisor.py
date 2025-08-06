@@ -173,7 +173,7 @@ You are a preference spotter. Your task is to identify and extract any product-r
         """Detects the language of the user's input."""
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 messages=[
                     {
                         "role": "system",

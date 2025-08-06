@@ -3,7 +3,7 @@ End-to-end test scenarios for the shopping assistant chatbot using an LLM evalua
 
 This script runs a series of predefined conversational scenarios against the ShoppingAdvisor
 to verify its core functionalities. Instead of simple keyword matching, it uses a powerful
-LLM (gpt-4o-mini) to evaluate if the chatbot's response correctly addresses the user's
+LLM (gpt-4.1) to evaluate if the chatbot's response correctly addresses the user's
 request in each step.
 
 Usage:
@@ -143,7 +143,7 @@ Based on all the provided information, did the assistant's response meet the exp
 """
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
