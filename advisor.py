@@ -10,6 +10,7 @@ import logging
 from typing import Optional, List, Dict, Any
 
 import streamlit as st
+import weave
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from pydantic_core import PydanticOmit
@@ -22,6 +23,9 @@ from prompts import (
     GENERAL_ASSORTMENT_INQUIRY
 )
 from retrieval import ProductRetriever
+
+# Initialize Weave
+weave.init("shopping-assistant-bot")
 
 # --- Intent Routing ---
 from enum import Enum
@@ -44,6 +48,10 @@ class IntentRouter(BaseModel):
 class UserPreference(BaseModel):
     """Model for user preferences."""
     brand: Optional[str] = Field(None, description="The user's preferred brand (e.g., 'Dell', 'HP', 'AMD').")
+    min_screen_inch: Optional[float] = Field(None, description="The user's preferred minimum screen size in inches.")
+    max_screen_inch: Optional[float] = Field(None, description="The user's preferred maximum screen size in inches.")
+    min_storage_gb: Optional[int] = Field(None, description="The user's preferred minimum storage in GB.")
+    min_ram_gb: Optional[int] = Field(None, description="The user's preferred minimum RAM in GB.")
 
 class PreferenceExtractor(BaseModel):
     """Extracts user preferences from a conversation."""
@@ -87,10 +95,14 @@ class ShoppingAdvisor:
         self.search_tool_schema = convert_to_openai_function(ProductSearchTool)
         self.preference_extractor_schema = convert_to_openai_function(PreferenceExtractor)
 
+    @weave.op()
     def _extract_preferences(self, user_input: str) -> Optional[Dict[str, Any]]:
-        """Extracts brand preference from user input."""
+        """Extracts user preferences from user input."""
         messages = [
-            {"role": "system", "content": "You are a preference spotter. Your task is to identify if the user expresses a preference for a specific brand (like Dell, HP, Apple, AMD, Intel). Only extract the preference if it's explicitly stated."},
+            {
+                "role": "system", 
+                "content": "You are a preference spotter. Your task is to identify and extract user preferences for brand, screen size (in inches), storage (in GB), and RAM (in GB). Only extract preferences that are explicitly stated."
+            },
             {"role": "user", "content": user_input},
         ]
         
@@ -103,15 +115,19 @@ class ShoppingAdvisor:
             )
             tool_call = response.choices[0].message.tool_calls[0]
             args = json.loads(tool_call.function.arguments)
-            preference = args.get("preference", {})
-            if preference.get('brand'):
-                logger.info(f"Extracted brand preference: {preference['brand']}")
-                return preference
+            preferences = args.get("preference", {})
+            
+            # Filter out None values and log the extracted preferences
+            extracted_prefs = {k: v for k, v in preferences.items() if v is not None}
+            if extracted_prefs:
+                logger.info(f"Extracted preferences: {extracted_prefs}")
+                return extracted_prefs
         except (json.JSONDecodeError, KeyError, ValueError, IndexError, AttributeError) as e:
             logger.warning(f"Preference extraction failed: {e}")
             return None
         return None
 
+    @weave.op()
     def _get_intent(self, user_input: str) -> Intent:
         """Determines the user's intent with up to 5 retries."""
         messages = [
@@ -139,6 +155,7 @@ class ShoppingAdvisor:
         logger.warning("Intent classification failed after 5 attempts. Defaulting to GENERAL_INQUIRY.")
         return Intent.GENERAL_INQUIRY
 
+    @weave.op()
     def _execute_rag_flow(self, history: List[Dict[str, str]], system_prompt_content: str, preferences: Dict[str, Any]) -> str:
         """Executes the full retrieval-augmented generation flow."""
         system_prompt = {"role": "system", "content": system_prompt_content}
@@ -160,8 +177,11 @@ class ShoppingAdvisor:
 
                 for tool_call in resp_msg.tool_calls:
                     args = json.loads(tool_call.function.arguments or "{}")
-                    if preferences.get('brand'):
-                        args['brand'] = preferences['brand']
+                    
+                    # Apply stored preferences to the search arguments, avoiding overwrites
+                    for key, value in preferences.items():
+                        if key not in args:
+                            args[key] = value
 
                     logger.info("Tool call requested: %s with args:\n%s", tool_call.function.name, json.dumps(args, indent=2))
                     
@@ -192,10 +212,12 @@ class ShoppingAdvisor:
             logger.exception("Error in RAG flow: %s", e)
             return "Sorry, I encountered an error while processing your request."
 
+    @weave.op()
     def _handle_comparison(self, history: List[Dict[str, str]], preferences: Dict[str, Any]) -> str:
         """Handles a product comparison request using the RAG flow."""
         return self._execute_rag_flow(history, PRODUCT_COMPARISON["system_prompt"], preferences)
 
+    @weave.op()
     def get_response(self, user_input: str, history: List[Dict[str, str]], preferences: Dict[str, Any]) -> str:
         """Routes the user to a specific handler based on the classified intent."""
         logger.info("User input: %s", user_input)
@@ -248,9 +270,10 @@ def main():
             st.markdown(prompt)
 
         new_preferences = advisor._extract_preferences(prompt)
-        if new_preferences and new_preferences.get('brand'):
-            st.session_state.preferences['brand'] = new_preferences['brand']
-            st.info(f"Preference updated: We will now look for **{new_preferences['brand']}** products.")
+        if new_preferences:
+            st.session_state.preferences.update(new_preferences)
+            pref_list = [f"**{k.replace('_', ' ').title()}**: {v}" for k, v in new_preferences.items()]
+            st.info(f"Preferences updated: {', '.join(pref_list)}")
 
         history = st.session_state.get("messages", [])
         preferences = st.session_state.get("preferences", {})
