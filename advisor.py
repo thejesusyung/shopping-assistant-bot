@@ -50,7 +50,7 @@ class UserPreference(BaseModel):
     screen_inch: Optional[float] = Field(None, description="The user's preferred screen size in inches (e.g., 14.0, 15.6).")
     min_price: Optional[int] = Field(None, description="The user's minimum budget in USD.")
     max_price: Optional[int] = Field(None, description="The user's maximum budget in USD.")
-    cpu_brand: Optional[Literal["Intel", "AMD", "Apple"]] = Field(None, description="The user's preferred CPU brand.")
+    cpu_brand: Optional[str] = Field(None, description="The user's preferred CPU brand or model (e.g., 'AMD', 'Intel Core i7', 'Ryzen 5').")
     gpu: Optional[str] = Field(None, description="The user's preferred GPU. Can be a specific model ('RTX 3050') or a general type ('dedicated', 'nvidia').")
     color: Optional[str] = Field(None, description="The user's preferred color for the product.")
 

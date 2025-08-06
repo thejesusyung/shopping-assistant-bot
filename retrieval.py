@@ -51,19 +51,6 @@ def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
 
 
-def _cpu_brand(cpu: str) -> Optional[str]:
-    s = _norm(cpu)
-    if not s:
-        return None
-    if "intel" in s:
-        return "intel"
-    if "amd" in s:
-        return "amd"
-    if "apple" in s or s.startswith("m") or "m1" in s or "m2" in s or "m3" in s:
-        return "apple"
-    return None
-
-
 def _flatten(products: List[Dict[str, Any]]) -> List[VariantRow]:
     rows: List[VariantRow] = []
     for p in products:
@@ -141,7 +128,7 @@ class ProductRetriever:
 
         if cpu_brand:
             cb = _norm(cpu_brand)
-            rows = [r for r in rows if _cpu_brand(r.cpu) == cb]
+            rows = [r for r in rows if cb in _norm(r.cpu)]
 
         if gpu:
             g = _norm(gpu)
