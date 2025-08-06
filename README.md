@@ -5,10 +5,11 @@ This project is a conversational shopping assistant that helps users choose prod
 ## Features
 
 - **Natural Language Understanding**: Powered by OpenAI's GPT models to understand user queries.
+- **Intelligent Preference Handling**: Dynamically uses the product catalog to accurately identify user preferences like brand, preventing confusion with model names.
 - **Product Filtering**: Supports filtering by price, brand, specs, and availability.
-- **Typo Correction**: Uses Levenshtein distance to handle typos in product names.
-- **Contextual Conversations**: Maintains a short-term memory of the conversation.
-- **Multilingual**: Responds in both English and Russian.
+- **Advanced Typo Correction**: Uses robust fuzzy matching (`rapidfuzz`) to handle typos in product names.
+- **Contextual Conversations**: Maintains a short-term memory of the conversation and user preferences.
+- **Dedicated Language Detection**: Explicitly detects the user's language (English/Russian) to ensure responses are in the correct language.
 
 ## Setup and Installation
 
@@ -30,7 +31,7 @@ This project is a conversational shopping assistant that helps users choose prod
     ```
 
 4.  **Set up your OpenAI API Key:**
-    The application uses Streamlit's secrets management. For local development, you can create a `.streamlit/secrets.toml` file in the project root:
+    The application uses Streamlit's secrets management. For local development, create a `.streamlit/secrets.toml` file in the project root:
     ```toml
     # .streamlit/secrets.toml
     OPENAI_API_KEY = "your-openai-api-key"
@@ -56,10 +57,11 @@ The application will be available at `http://localhost:8501`.
 ## Возможности
 
 - **Понимание естественного языка**: Использует модели GPT от OpenAI для понимания запросов пользователей.
+- **Интеллектуальная обработка предпочтений**: Динамически использует каталог продуктов для точного определения предпочтений пользователя, таких как бренд, избегая путаницы с названиями моделей.
 - **Фильтрация продуктов**: Поддерживает фильтрацию по цене, бренду, характеристикам и наличию.
-- **Исправление опечаток**: Использует расстояние Левенштейна для исправления опечаток в названиях продуктов.
-- **Контекстные диалоги**: Сохраняет краткосрочную память о разговоре.
-- **Многоязычность**: Отвечает на английском и русском языках.
+- **Продвинутое исправление опечаток**: Использует надежное нечеткое сопоставление (`rapidfuzz`) для обработки опечаток в названиях продуктов.
+- **Контекстные диалоги**: Сохраняет краткосрочную память о разговоре и предпочтениях пользователя.
+- **Определение языка**: Явно определяет язык пользователя (английский/русский), чтобы гарантировать ответы на правильном языке.
 
 ## Установка
 

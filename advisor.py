@@ -51,7 +51,7 @@ class UserPreference(BaseModel):
     min_price: Optional[int] = Field(None, description="The user's minimum budget in USD.")
     max_price: Optional[int] = Field(None, description="The user's maximum budget in USD.")
     cpu_brand: Optional[Literal["Intel", "AMD", "Apple"]] = Field(None, description="The user's preferred CPU brand.")
-    has_dedicated_gpu: Optional[bool] = Field(None, description="Whether the user requires a dedicated GPU (not integrated).")
+    gpu: Optional[str] = Field(None, description="The user's preferred GPU. Can be a specific model ('RTX 3050') or a general type ('dedicated', 'nvidia').")
     color: Optional[str] = Field(None, description="The user's preferred color for the product.")
 
 
@@ -84,6 +84,7 @@ class ProductSearchTool(BaseModel):
     min_ram_gb: Optional[int] = Field(None, description="The minimum RAM size in GB.")
     min_storage_gb: Optional[int] = Field(None, description="The minimum storage size in GB.")
     brand: Optional[str] = Field(None, description="The brand of the product (e.g., 'Lenovo', 'Dell').")
+    gpu: Optional[str] = Field(None, description="The GPU model or type (e.g., 'RTX 3050', 'dedicated').")
     availability: Optional[List[str]] = Field(
         None, description="A list of availability statuses (e.g., 'in_stock', 'preorder')."
     )
