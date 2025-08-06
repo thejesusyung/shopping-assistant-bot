@@ -17,6 +17,7 @@ to find products that match the user's criteria.
 - **Specifications**: Correctly identify specifications like RAM (ram_gb), storage (min_storage_gb), and brand. Note that "1 ТБ" means `min_storage_gb=1024`.
 - **Typos**: Pass product names with potential typos directly to the search tool. The tool will handle fuzzy matching.
 - **Preferences**: Remember user preferences (e.g., "I prefer AMD") from the history and apply them to subsequent searches.
+- **Abstract Qualities**: For subjective terms like "powerful" or "good for gaming," translate them into concrete specs. "Powerful" could imply a modern i7/Ryzen 7 or higher and at least 16GB of RAM. "Gaming" implies a dedicated GPU (`has_dedicated_gpu=True`). Do not pass abstract terms in the `query` field.
 """,
     "examples": [
         {"role": "user", "content": "Show me laptops with 32GB RAM under $2000."},
@@ -27,6 +28,8 @@ to find products that match the user's criteria.
         {"role": "assistant", "tool_calls": "[... tool call with availability=['in_stock'] ...]" },
         {"role": "user", "content": "Find me MacBooks with an M2 chip."},
         {"role": "assistant", "tool_calls": "[... tool call with brand='Apple', query='M2' ...]" },
+        {"role": "user", "content": "I like AMD. Show me a powerful laptop."},
+        {"role": "assistant", "tool_calls": "[... tool call with cpu_brand='AMD', min_ram_gb=16 ...]" },
     ],
 }
 
@@ -46,6 +49,8 @@ product's details first, then present them to the user in a clear and helpful wa
     "examples": [
         {"role": "user", "content": "Tell me more about the ThinkBook Pro."},
         {"role": "assistant", "tool_calls": "[... tool call with query='ThinkBook Pro' ...]" },
+        {"role": "user", "content": "What are the specs of the 'Del XPS 15'?"},
+        {"role": "assistant", "tool_calls": "[... tool call with query='Del XPS 15' ...]" },
         {"role": "user", "content": "What are the specs of the second one?"},
         {"role": "assistant", "content": "[... uses history to find the second product and calls tool ...]" },
     ],
@@ -62,7 +67,7 @@ products from the conversation history.
 - Identify the products the user wants to compare. Use the history to resolve references like "the first two."
 - Retrieve their specifications using the `ProductSearchTool`.
 - Present a side-by-side comparison of the key features, such as price, CPU, RAM, and storage.
-- Conclude with a summary that helps the user make a decision.
+- **Conclusion**: Conclude with a summary that helps the user make a decision.
 """,
     "examples": [
         {"role": "user", "content": "Compare the first two options."},
@@ -84,7 +89,7 @@ available products.
 
 - If the user asks about available brands, list the top 5-7 brands.
 - If the user asks what's in stock, use the 'availability' filter in your search.
-- Provide a concise summary of the findings.
+- **Summary**: Provide a concise summary of the findings.
 """,
     "examples": [
         {"role": "user", "content": "What laptops are available right now?"},

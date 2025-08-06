@@ -10,7 +10,6 @@ import logging
 from typing import Optional, List, Dict, Any
 
 import streamlit as st
-import weave
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from pydantic_core import PydanticOmit
@@ -23,9 +22,6 @@ from prompts import (
     GENERAL_ASSORTMENT_INQUIRY
 )
 from retrieval import ProductRetriever
-
-# Initialize Weave
-weave.init("shopping-assistant-bot")
 
 # --- Intent Routing ---
 from enum import Enum
@@ -45,13 +41,19 @@ class IntentRouter(BaseModel):
     )
 
 # --- Preference Extraction ---
+from typing import Optional, List, Dict, Any, Literal
 class UserPreference(BaseModel):
     """Model for user preferences."""
-    brand: Optional[str] = Field(None, description="The user's preferred brand (e.g., 'Dell', 'HP', 'AMD').")
-    min_screen_inch: Optional[float] = Field(None, description="The user's preferred minimum screen size in inches.")
-    max_screen_inch: Optional[float] = Field(None, description="The user's preferred maximum screen size in inches.")
-    min_storage_gb: Optional[int] = Field(None, description="The user's preferred minimum storage in GB.")
-    min_ram_gb: Optional[int] = Field(None, description="The user's preferred minimum RAM in GB.")
+    brand: Optional[str] = Field(None, description="The user's preferred brand (e.g., 'Dell', 'HP', 'Apple').")
+    min_ram_gb: Optional[int] = Field(None, description="The user's minimum required RAM in GB (e.g., 16).")
+    min_storage_gb: Optional[int] = Field(None, description="The user's minimum required storage in GB (e.g., 512, 1024).")
+    screen_inch: Optional[float] = Field(None, description="The user's preferred screen size in inches (e.g., 14.0, 15.6).")
+    min_price: Optional[int] = Field(None, description="The user's minimum budget in USD.")
+    max_price: Optional[int] = Field(None, description="The user's maximum budget in USD.")
+    cpu_brand: Optional[Literal["Intel", "AMD", "Apple"]] = Field(None, description="The user's preferred CPU brand.")
+    has_dedicated_gpu: Optional[bool] = Field(None, description="Whether the user requires a dedicated GPU (not integrated).")
+    color: Optional[str] = Field(None, description="The user's preferred color for the product.")
+
 
 class PreferenceExtractor(BaseModel):
     """Extracts user preferences from a conversation."""
@@ -91,43 +93,54 @@ class ShoppingAdvisor:
     def __init__(self, api_key: str):
         self.client = OpenAI(api_key=api_key)
         self.retriever = ProductRetriever()
+        self.known_brands = self.retriever.get_all_brands()
         self.router_schema = convert_to_openai_function(IntentRouter)
         self.search_tool_schema = convert_to_openai_function(ProductSearchTool)
         self.preference_extractor_schema = convert_to_openai_function(PreferenceExtractor)
 
-    @weave.op()
     def _extract_preferences(self, user_input: str) -> Optional[Dict[str, Any]]:
-        """Extracts user preferences from user input."""
+        """Extracts user preferences from user input using a structured format."""
+        
+        # Create a dynamic system prompt with the list of known brands
+        brands_list = ", ".join(self.known_brands)
+        system_prompt = f"""
+You are a preference spotter. Your task is to identify and extract any product-related preferences the user states.
+
+- **Extract from this list of known brands only**: {brands_list}.
+- Other preferences can include RAM, storage, screen size, price, CPU (Intel, AMD, Apple), GPU, or color.
+- Only extract preferences that are explicitly mentioned.
+"""
+
         messages = [
-            {
-                "role": "system", 
-                "content": "You are a preference spotter. Your task is to identify and extract user preferences for brand, screen size (in inches), storage (in GB), and RAM (in GB). Only extract preferences that are explicitly stated."
-            },
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_input},
         ]
-        
+
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4.1-mini",
                 messages=messages,
                 tools=[{"type": "function", "function": self.preference_extractor_schema}],
                 tool_choice={"type": "function", "function": {"name": "PreferenceExtractor"}},
+                temperature=0.0,
             )
             tool_call = response.choices[0].message.tool_calls[0]
             args = json.loads(tool_call.function.arguments)
             preferences = args.get("preference", {})
             
-            # Filter out None values and log the extracted preferences
+            # Filter out any None values to only return explicitly stated preferences
             extracted_prefs = {k: v for k, v in preferences.items() if v is not None}
+            
             if extracted_prefs:
                 logger.info(f"Extracted preferences: {extracted_prefs}")
                 return extracted_prefs
+                
         except (json.JSONDecodeError, KeyError, ValueError, IndexError, AttributeError) as e:
             logger.warning(f"Preference extraction failed: {e}")
             return None
+            
         return None
 
-    @weave.op()
     def _get_intent(self, user_input: str) -> Intent:
         """Determines the user's intent with up to 5 retries."""
         messages = [
@@ -142,6 +155,7 @@ class ShoppingAdvisor:
                     messages=messages,
                     tools=[{"type": "function", "function": self.router_schema}],
                     tool_choice={"type": "function", "function": {"name": "IntentRouter"}},
+                    temperature=0.0,
                 )
                 tool_call = response.choices[0].message.tool_calls[0]
                 args = json.loads(tool_call.function.arguments)
@@ -155,8 +169,31 @@ class ShoppingAdvisor:
         logger.warning("Intent classification failed after 5 attempts. Defaulting to GENERAL_INQUIRY.")
         return Intent.GENERAL_INQUIRY
 
-    @weave.op()
-    def _execute_rag_flow(self, history: List[Dict[str, str]], system_prompt_content: str, preferences: Dict[str, Any]) -> str:
+    def _get_language(self, user_input: str) -> Literal["English", "Russian"]:
+        """Detects the language of the user's input."""
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a language detector. Determine if the user's message is primarily in English or Russian. Respond with only 'English' or 'Russian'.",
+                    },
+                    {"role": "user", "content": user_input},
+                ],
+                max_tokens=5,
+                temperature=0.0,
+            )
+            language = response.choices[0].message.content.strip()
+            if language in ["English", "Russian"]:
+                logger.info(f"Language detected: {language}")
+                return language
+        except Exception as e:
+            logger.warning(f"Language detection failed: {e}")
+        
+        return "English"  # Default to English on failure
+
+    def _execute_rag_flow(self, history: List[Dict[str, str]], system_prompt_content: str, preferences: Dict[str, Any], language: str) -> str:
         """Executes the full retrieval-augmented generation flow."""
         system_prompt = {"role": "system", "content": system_prompt_content}
         messages: List[Dict[str, Any]] = [system_prompt] + history
@@ -168,6 +205,7 @@ class ShoppingAdvisor:
                 messages=messages,
                 tools=[{"type": "function", "function": self.search_tool_schema}],
                 tool_choice="auto",
+                temperature=0.0,
             )
             resp_msg = first_response.choices[0].message
             logger.info("LLM response (1st RAG call):\n%s", resp_msg.model_dump_json(indent=2))
@@ -178,14 +216,13 @@ class ShoppingAdvisor:
                 for tool_call in resp_msg.tool_calls:
                     args = json.loads(tool_call.function.arguments or "{}")
                     
-                    # Apply stored preferences to the search arguments, avoiding overwrites
-                    for key, value in preferences.items():
-                        if key not in args:
-                            args[key] = value
+                    # Merge stored preferences with tool call arguments
+                    merged_args = preferences.copy()
+                    merged_args.update(args)
 
-                    logger.info("Tool call requested: %s with args:\n%s", tool_call.function.name, json.dumps(args, indent=2))
+                    logger.info("Tool call requested: %s with merged args:\n%s", tool_call.function.name, json.dumps(merged_args, indent=2))
                     
-                    results = self.retriever.search_products(**args)
+                    results = self.retriever.search_products(**merged_args)
                     products_json = json.dumps(results, indent=2, ensure_ascii=False)
                     logger.info("Retrieved products (JSON) for tool_call %s:\n%s", tool_call.id, products_json)
 
@@ -196,12 +233,12 @@ class ShoppingAdvisor:
                         "content": products_json,
                     })
                 
-                follow_up = "Based on the tool results (JSON above), write a concise, helpful summary. Respond in the user's language."
+                follow_up = f"Based on the tool results (JSON above), write a concise, helpful summary. Respond in {language}."
                 messages.append({"role": "user", "content": follow_up})
                 
                 logger.info("Messages to LLM (2nd RAG call):\n%s", json.dumps(messages, indent=2))
 
-                final_response = self.client.chat.completions.create(model="gpt-4.1-mini", messages=messages)
+                final_response = self.client.chat.completions.create(model="gpt-4.1-mini", messages=messages, temperature=0.0)
                 final_content = (final_response.choices[0].message.content or "").strip()
                 logger.info("Final LLM response: %s", final_content)
                 return final_content
@@ -212,26 +249,25 @@ class ShoppingAdvisor:
             logger.exception("Error in RAG flow: %s", e)
             return "Sorry, I encountered an error while processing your request."
 
-    @weave.op()
-    def _handle_comparison(self, history: List[Dict[str, str]], preferences: Dict[str, Any]) -> str:
+    def _handle_comparison(self, history: List[Dict[str, str]], preferences: Dict[str, Any], language: str) -> str:
         """Handles a product comparison request using the RAG flow."""
-        return self._execute_rag_flow(history, PRODUCT_COMPARISON["system_prompt"], preferences)
+        return self._execute_rag_flow(history, PRODUCT_COMPARISON["system_prompt"], preferences, language)
 
-    @weave.op()
     def get_response(self, user_input: str, history: List[Dict[str, str]], preferences: Dict[str, Any]) -> str:
         """Routes the user to a specific handler based on the classified intent."""
         logger.info("User input: %s", user_input)
+        language = self._get_language(user_input)
         intent = self._get_intent(user_input)
         truncated_history = history[-10:]
 
         if intent == Intent.SEARCH_SELECTION:
-            return self._execute_rag_flow(truncated_history, PRODUCT_SEARCH_SELECTION["system_prompt"], preferences)
+            return self._execute_rag_flow(truncated_history, PRODUCT_SEARCH_SELECTION["system_prompt"], preferences, language)
         elif intent == Intent.INFORMATION_DETAILS:
-            return self._execute_rag_flow(truncated_history, PRODUCT_INFORMATION_DETAILS["system_prompt"], preferences)
+            return self._execute_rag_flow(truncated_history, PRODUCT_INFORMATION_DETAILS["system_prompt"], preferences, language)
         elif intent == Intent.COMPARISON:
-            return self._handle_comparison(truncated_history, preferences)
+            return self._execute_rag_flow(truncated_history, PRODUCT_COMPARISON["system_prompt"], preferences, language)
         else:
-            return self._execute_rag_flow(truncated_history, GENERAL_ASSORTMENT_INQUIRY["system_prompt"], preferences)
+            return self._execute_rag_flow(truncated_history, GENERAL_ASSORTMENT_INQUIRY["system_prompt"], preferences, language)
 
 def main():
     st.set_page_config(page_title="Future Tech - Shopping Assistant", page_icon="🛍️")
